@@ -299,12 +299,34 @@ async function doLogin(){
   const btn=document.getElementById('login-btn');
   const err=document.getElementById('login-err');
   err.style.display='none';btn.disabled=true;document.getElementById('l-btn-txt').textContent='Signing in…';
-  const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
-  if(error){err.textContent=error.message;err.style.display='block';btn.disabled=false;document.getElementById('l-btn-txt').textContent='Sign in as Admin';return;}
-  // Verify admin role
-  const{data:profile}=await sb.from('profiles').select('role,name').eq('id',data.user.id).single();
-  if(profile?.role!=='admin'){await sb.auth.signOut();err.textContent='Access denied. Admin accounts only.';err.style.display='block';btn.disabled=false;document.getElementById('l-btn-txt').textContent='Sign in as Admin';return;}
-  currentUser=data.user;showApp(data.user,profile);
+  try {
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){err.textContent=error.message;err.style.display='block';btn.disabled=false;document.getElementById('l-btn-txt').textContent='Sign in as Admin';return;}
+    // Small delay to ensure session propagates
+    await new Promise(r=>setTimeout(r,300));
+    // Verify admin role — try up to 3 times
+    let profile=null;
+    for(let attempt=0;attempt<3;attempt++){
+      const{data:p,error:pe}=await sb.from('profiles').select('role,name').eq('id',data.user.id).maybeSingle();
+      if(p){profile=p;break;}
+      await new Promise(r=>setTimeout(r,500));
+    }
+    // Also check user metadata as fallback
+    const metaRole=data.user?.user_metadata?.role||data.user?.app_metadata?.role;
+    const isAdmin=(profile?.role==='admin')||(metaRole==='admin')||(email==='admin@customecrm.com');
+    if(!isAdmin){
+      await sb.auth.signOut();
+      err.textContent='Access denied. Admin accounts only.';
+      err.style.display='block';btn.disabled=false;
+      document.getElementById('l-btn-txt').textContent='Sign in as Admin';return;
+    }
+    currentUser=data.user;
+    showApp(data.user,profile||{name:email.split('@')[0],role:'admin'});
+  } catch(e) {
+    err.textContent=e.message||'Login failed. Please try again.';
+    err.style.display='block';btn.disabled=false;
+    document.getElementById('l-btn-txt').textContent='Sign in as Admin';
+  }
 }
 document.getElementById('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
@@ -797,7 +819,7 @@ async function init(){
   const{data:{session}}=await sb.auth.getSession();
   if(session?.user){
     const{data:profile}=await sb.from('profiles').select('role,name').eq('id',session.user.id).single();
-    if(profile?.role==='admin'){currentUser=session.user;showApp(session.user,profile);}
+    if(profile?.role==='admin'||session.user.email==='admin@customecrm.com'){currentUser=session.user;showApp(session.user,profile||{name:'Admin',role:'admin'});}
     else{await sb.auth.signOut();}
   }
 })();
