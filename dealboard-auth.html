@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sign in — Dealboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[data-theme="dark"]{--bg:#05080f;--bg2:#0b1120;--bg3:#111c35;--bg4:#182440;--border:#1a2d4e;--border2:#243d66;--text:#edf2ff;--text2:#7a93c0;--text3:#3a567a;--shadow:rgba(0,0,0,.7)}
+[data-theme="light"]{--bg:#eef2fb;--bg2:#fff;--bg3:#f4f7ff;--bg4:#e8eeff;--border:#cdd7f0;--border2:#b0bfe0;--text:#0a1020;--text2:#3a5080;--text3:#8090b0;--shadow:rgba(0,0,0,.1)}
+:root{--purple:#7c3aed;--blue:#2563eb;--grad:linear-gradient(135deg,#7c3aed,#2563eb);--green:#10b981;--red:#ef4444;--r:10px;--r2:14px;--r3:20px;font-family:'Inter',sans-serif}
+body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+.bg-glow{position:fixed;inset:0;background:radial-gradient(ellipse at 30% 40%,rgba(124,58,237,.13) 0%,transparent 55%),radial-gradient(ellipse at 70% 60%,rgba(37,99,235,.1) 0%,transparent 55%);pointer-events:none;z-index:0}
+.card{position:relative;z-index:1;width:420px;max-width:96vw;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);padding:40px 36px;box-shadow:0 24px 80px var(--shadow)}
+.logo-row{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.lm{display:flex;flex-direction:column;gap:3px}
+.lb{height:4px;border-radius:2px;background:var(--grad)}
+.lb:nth-child(1){width:22px;margin-left:7px}
+.lb:nth-child(2){width:29px}
+.lb:nth-child(3){width:17px;margin-left:11px}
+.wm{font-size:22px;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.4px}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-.5px;margin-bottom:5px}
+.page-sub{font-size:13px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+.auth-tabs{display:flex;gap:3px;background:var(--bg3);border-radius:var(--r);padding:3px;border:1px solid var(--border);margin-bottom:24px}
+.auth-tab{flex:1;padding:8px 10px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;font-family:'Inter',sans-serif;color:var(--text2);background:transparent;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.auth-tab.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 4px var(--shadow)}
+.fl{display:block;font-size:11.5px;font-weight:500;color:var(--text2);margin-bottom:5px;letter-spacing:.2px}
+.fc{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:all .2s;margin-bottom:14px}
+.fc:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.12)}
+.fc::placeholder{color:var(--text3)}
+.fc-group{position:relative;margin-bottom:14px}
+.fc-group .fc{margin-bottom:0}
+.fc-suffix{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;padding:0}
+.fc-suffix:hover{color:var(--purple)}
+.phone-row{display:flex;gap:8px;margin-bottom:14px}
+.country-sel{width:110px;flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px 10px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}
+.country-sel:focus{border-color:var(--purple)}
+.phone-inp{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px;color:var(--text);font-size:14px;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .2s}
+.phone-inp:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.12)}
+.phone-inp::placeholder{color:var(--text3);font-family:'Inter',sans-serif}
+.otp-wrap{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+.otp-box{width:50px;height:54px;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r);text-align:center;font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none;transition:all .2s}
+.otp-box:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.15);background:var(--bg4)}
+.otp-box.filled{border-color:var(--purple)}
+.btn-main{width:100%;background:var(--grad);color:#fff;border:none;border-radius:var(--r);padding:13px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:9px;letter-spacing:.1px}
+.btn-main:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 8px 24px rgba(124,58,237,.3)}
+.btn-main:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-google{width:100%;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);padding:12px;font-size:14px;font-weight:500;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--text)}
+.btn-google:hover{background:var(--bg3);border-color:var(--purple);transform:translateY(-1px)}
+.google-ico{width:20px;height:20px;flex-shrink:0}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.divider span{font-size:12px;color:var(--text3);white-space:nowrap}
+.alert{border-radius:var(--r);padding:11px 14px;font-size:13px;margin-bottom:16px;display:none;line-height:1.5}
+.alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red)}
+.alert-success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:var(--green)}
+.alert-info{background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.25);color:var(--blue)}
+.steps{display:flex;align-items:center;gap:0;margin-bottom:24px}
+.step{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)}
+.step-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;transition:all .2s}
+.step.done .step-dot{background:var(--green);border-color:var(--green);color:#fff}
+.step.active .step-dot{background:var(--grad);border-color:transparent;color:#fff}
+.step-line{flex:1;height:1px;background:var(--border);margin:0 6px}
+.step-line.done{background:var(--green)}
+.otp-timer{text-align:center;font-size:12.5px;color:var(--text3);margin-top:10px}
+.otp-timer .resend{color:var(--purple);cursor:pointer;font-weight:500}
+.otp-timer .resend:hover{text-decoration:underline}
+.onboard-field{margin-bottom:16px}
+.link{color:var(--purple);cursor:pointer;text-decoration:none;font-weight:500}
+.link:hover{text-decoration:underline}
+.card-footer{margin-top:20px;text-align:center;font-size:12px;color:var(--text3);line-height:1.7}
+.panel{display:none}.panel.show{display:block}
+.pw-strength{height:3px;border-radius:99px;margin-top:-10px;margin-bottom:14px;transition:all .3s}
+.theme-sw{position:absolute;top:16px;right:16px;display:flex;gap:4px}
+.tsw-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text3);font-size:13px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.tsw-btn.active{background:var(--bg4);color:var(--text);border-color:var(--border2)}
+
+/* Loading overlay */
+.auth-loading{position:fixed;inset:0;background:var(--bg);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.auth-loading.show{display:flex}
+.spin{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<!-- Loading overlay shown while processing OAuth callback -->
+<div class="auth-loading" id="auth-loading">
+  <div class="spin"></div>
+  <div style="font-size:14px;color:var(--text2)">Signing you in…</div>
+</div>
+
+<div class="card">
+  <div class="theme-sw">
+    <button class="tsw-btn" data-t="light" onclick="setTheme('light')" title="Light">☀️</button>
+    <button class="tsw-btn" data-t="system" onclick="setTheme('system')" title="System">💻</button>
+    <button class="tsw-btn" data-t="dark" onclick="setTheme('dark')" title="Dark">🌙</button>
+  </div>
+
+  <div class="logo-row">
+    <div class="lm"><div class="lb"></div><div class="lb"></div><div class="lb"></div></div>
+    <div class="wm">Dealboard</div>
+  </div>
+
+  <!-- ── SIGN IN ── -->
+  <div id="panel-signin" class="panel show">
+    <div class="page-title">Welcome back 👋</div>
+    <div class="page-sub">Sign in to your Dealboard workspace.</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-email" onclick="switchAuthTab('email')">✉️ Email</button>
+      <button class="auth-tab" id="tab-phone" onclick="switchAuthTab('phone')">📱 Mobile OTP</button>
+      <button class="auth-tab" id="tab-google" onclick="switchAuthTab('google')">🌐 Google</button>
+    </div>
+
+    <div class="alert alert-error" id="si-err"></div>
+    <div class="alert alert-success" id="si-ok"></div>
+
+    <!-- Email signin -->
+    <div id="auth-email">
+      <label class="fl">Email address</label>
+      <input class="fc" id="si-email" type="email" placeholder="you@company.com" autocomplete="email"/>
+      <label class="fl">Password</label>
+      <div class="fc-group">
+        <input class="fc" id="si-pass" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        <button class="fc-suffix" onclick="togglePw('si-pass',this)">Show</button>
+      </div>
+      <button class="btn-main" id="si-btn" onclick="signInEmail()">Sign in</button>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--text3)">
+        Forgot password? <span class="link" onclick="showPanel('panel-reset')">Reset it</span>
+      </div>
+    </div>
+
+    <!-- Phone OTP signin -->
+    <div id="auth-phone" style="display:none">
+      <label class="fl">Mobile number</label>
+      <div class="phone-row">
+        <select class="country-sel" id="si-country">
+          <option value="+91">🇮🇳 +91</option>
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+971">🇦🇪 +971</option>
+          <option value="+65">🇸🇬 +65</option>
+          <option value="+60">🇲🇾 +60</option>
+          <option value="+61">🇦🇺 +61</option>
+          <option value="+49">🇩🇪 +49</option>
+          <option value="+33">🇫🇷 +33</option>
+          <option value="+81">🇯🇵 +81</option>
+        </select>
+        <input class="phone-inp" id="si-phone" type="tel" placeholder="98200 00000" maxlength="12"/>
+      </div>
+      <button class="btn-main" id="si-otp-btn" onclick="sendOTP('signin')">Send OTP</button>
+      <div id="si-otp-section" style="display:none;margin-top:18px">
+        <label class="fl" style="text-align:center;display:block;margin-bottom:12px">Enter the 6-digit OTP sent to your phone</label>
+        <div class="otp-wrap" id="si-otp-boxes"></div>
+        <button class="btn-main" onclick="verifyOTP('signin')">Verify & Sign in</button>
+        <div class="otp-timer">Resend in <span id="si-timer">60</span>s &nbsp;·&nbsp; <span class="resend" id="si-resend" style="display:none" onclick="sendOTP('signin')">Resend OTP</span></div>
+      </div>
+    </div>
+
+    <!-- Google signin -->
+    <div id="auth-google" style="display:none">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:18px;font-size:13px;color:var(--text2);line-height:1.6">
+        Sign in with your Google account. Your name and profile photo will be imported automatically.
+      </div>
+      <button class="btn-google" id="google-btn" onclick="signInGoogle()">
+        <svg class="google-ico" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+
+    <div class="card-footer">
+      Don't have an account? <span class="link" onclick="showPanel('panel-signup')">Create account</span><br>
+      <span style="font-size:11px">© 2026 Yash Bhavsar — Dealboard</span>
+    </div>
+  </div>
+
+  <!-- ── SIGN UP ── -->
+  <div id="panel-signup" class="panel">
+    <div class="page-title">Create account ✨</div>
+    <div class="page-sub">Join your team on Dealboard. It's free to get started.</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="su-tab-email" onclick="switchSignupTab('email')">✉️ Email</button>
+      <button class="auth-tab" id="su-tab-phone" onclick="switchSignupTab('phone')">📱 Mobile OTP</button>
+      <button class="auth-tab" id="su-tab-google" onclick="switchSignupTab('google')">🌐 Google</button>
+    </div>
+
+    <div class="alert alert-error" id="su-err"></div>
+    <div class="alert alert-success" id="su-ok"></div>
+
+    <!-- Email signup -->
+    <div id="su-auth-email">
+      <label class="fl">Full Name *</label>
+      <input class="fc" id="su-name" type="text" placeholder="Yash Bhavsar" autocomplete="name"/>
+      <label class="fl">Email address *</label>
+      <input class="fc" id="su-email" type="email" placeholder="you@company.com" autocomplete="email"/>
+      <label class="fl">Password *</label>
+      <div class="fc-group">
+        <input class="fc" id="su-pass" type="password" placeholder="Min. 8 characters" autocomplete="new-password" oninput="checkPwStrength(this)"/>
+        <button class="fc-suffix" onclick="togglePw('su-pass',this)">Show</button>
+      </div>
+      <div class="pw-strength" id="pw-bar" style="background:var(--border)"></div>
+      <label class="fl">Confirm Password *</label>
+      <input class="fc" id="su-pass2" type="password" placeholder="Repeat password" autocomplete="new-password"/>
+      <button class="btn-main" id="su-btn" onclick="signUpEmail()">Create account</button>
+    </div>
+
+    <!-- Phone signup -->
+    <div id="su-auth-phone" style="display:none">
+      <label class="fl">Full Name *</label>
+      <input class="fc" id="su-name-ph" type="text" placeholder="Yash Bhavsar"/>
+      <label class="fl">Mobile number *</label>
+      <div class="phone-row">
+        <select class="country-sel" id="su-country">
+          <option value="+91">🇮🇳 +91</option>
+          <option value="+1">🇺🇸 +1</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+971">🇦🇪 +971</option>
+          <option value="+65">🇸🇬 +65</option>
+          <option value="+60">🇲🇾 +60</option>
+          <option value="+61">🇦🇺 +61</option>
+          <option value="+49">🇩🇪 +49</option>
+          <option value="+33">🇫🇷 +33</option>
+          <option value="+81">🇯🇵 +81</option>
+        </select>
+        <input class="phone-inp" id="su-phone" type="tel" placeholder="98200 00000" maxlength="12"/>
+      </div>
+      <button class="btn-main" id="su-otp-btn" onclick="sendOTP('signup')">Send OTP</button>
+      <div id="su-otp-section" style="display:none;margin-top:18px">
+        <label class="fl" style="text-align:center;display:block;margin-bottom:12px">Enter the 6-digit OTP sent to your phone</label>
+        <div class="otp-wrap" id="su-otp-boxes"></div>
+        <button class="btn-main" onclick="verifyOTP('signup')">Verify & Create Account</button>
+        <div class="otp-timer">Resend in <span id="su-timer">60</span>s &nbsp;·&nbsp; <span class="resend" id="su-resend" style="display:none" onclick="sendOTP('signup')">Resend OTP</span></div>
+      </div>
+    </div>
+
+    <!-- Google signup -->
+    <div id="su-auth-google" style="display:none">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:18px;font-size:13px;color:var(--text2);line-height:1.6">
+        Sign up instantly with your Google account. We'll import your name and photo automatically.
+      </div>
+      <button class="btn-google" onclick="signInGoogle()">
+        <svg class="google-ico" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Sign up with Google
+      </button>
+    </div>
+
+    <div class="card-footer">
+      Already have an account? <span class="link" onclick="showPanel('panel-signin')">Sign in</span><br>
+      By signing up you agree to our <a class="link" href="javascript:void(0)">Terms & Privacy Policy</a><br>
+      <span style="font-size:11px">© 2026 Yash Bhavsar — Dealboard</span>
+    </div>
+  </div>
+
+  <!-- ── ONBOARDING ── -->
+  <div id="panel-onboard" class="panel">
+    <div class="steps">
+      <div class="step done"><div class="step-dot">✓</div><span>Sign up</span></div>
+      <div class="step-line done"></div>
+      <div class="step active"><div class="step-dot">2</div><span>Your details</span></div>
+      <div class="step-line"></div>
+      <div class="step"><div class="step-dot">3</div><span>Ready!</span></div>
+    </div>
+    <div class="page-title">Tell us about you 👤</div>
+    <div class="page-sub">Help your team recognise you. These details appear across Dealboard.</div>
+    <div class="alert alert-error" id="ob-err"></div>
+    <label class="fl">Full Name *</label>
+    <input class="fc" id="ob-name" placeholder="Yash Bhavsar"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="onboard-field"><label class="fl">Job Title</label><input class="fc" id="ob-title" placeholder="Founder" style="margin-bottom:0"/></div>
+      <div class="onboard-field"><label class="fl">Company</label><input class="fc" id="ob-company" placeholder="Dealboard" style="margin-bottom:0"/></div>
+    </div>
+    <label class="fl" style="margin-top:12px">Phone Number</label>
+    <div class="phone-row">
+      <select class="country-sel" id="ob-country"><option value="+91">🇮🇳 +91</option><option value="+1">🇺🇸 +1</option><option value="+44">🇬🇧 +44</option><option value="+971">🇦🇪 +971</option></select>
+      <input class="phone-inp" id="ob-phone" type="tel" placeholder="98200 00000"/>
+    </div>
+    <button class="btn-main" id="ob-btn" onclick="saveOnboarding()">Complete setup →</button>
+  </div>
+
+  <!-- ── RESET PASSWORD ── -->
+  <div id="panel-reset" class="panel">
+    <div class="page-title">Reset password 🔑</div>
+    <div class="page-sub">Enter your email and we'll send you a reset link.</div>
+    <div class="alert alert-error" id="rs-err"></div>
+    <div class="alert alert-success" id="rs-ok"></div>
+    <label class="fl">Email address</label>
+    <input class="fc" id="rs-email" type="email" placeholder="you@company.com"/>
+    <button class="btn-main" id="rs-btn" onclick="sendReset()">Send reset link</button>
+    <div class="card-footer"><span class="link" onclick="showPanel('panel-signin')">← Back to sign in</span></div>
+  </div>
+</div>
+
+<div style="position:relative;z-index:1;margin-top:18px;text-align:center;font-size:12px;color:var(--text3)">
+  <a class="link" href="/app">Open CRM →</a>
+</div>
+
+<script>
+const SB_URL='https://dijaqnbfqsajbfniozwd.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpamFxbmJmcXNhamJmbmlvendkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMDM0NzgsImV4cCI6MjA5MDg3OTQ3OH0.YzzoJrFFi_SiCbklIhB-nZPLRDG4sPAqxzGC_ntJD-I';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+// ── THEME ──
+function applyTheme(t){const dark=t==='system'?window.matchMedia('(prefers-color-scheme:dark)').matches:t==='dark';document.documentElement.setAttribute('data-theme',dark?'dark':'light');document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('active',b.dataset.t===t));localStorage.setItem('db-auth-theme',t);}
+function setTheme(t){applyTheme(t);}
+window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if((localStorage.getItem('db-auth-theme')||'dark')==='system')applyTheme('system');});
+
+// ── PANEL ROUTING ──
+function showPanel(id){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('show'));document.getElementById(id).classList.add('show');document.querySelector('.card').scrollIntoView({behavior:'smooth'});}
+
+// ── HELPERS ──
+function showErr(id,msg){const el=document.getElementById(id);el.textContent=msg;el.style.display='block';}
+function showOk(id,msg){const el=document.getElementById(id);el.textContent=msg;el.className='alert alert-success';el.style.display='block';}
+function showInfo(id,msg){const el=document.getElementById(id);el.textContent=msg;el.className='alert alert-info';el.style.display='block';}
+function hideAlert(id){const el=document.getElementById(id);if(el)el.style.display='none';}
+function togglePw(inputId,btn){const inp=document.getElementById(inputId);inp.type=inp.type==='password'?'text':'password';btn.textContent=inp.type==='password'?'Show':'Hide';}
+
+// ── PASSWORD STRENGTH ──
+function checkPwStrength(inp){const v=inp.value;const bar=document.getElementById('pw-bar');if(!v){bar.style.width='0';bar.style.background='var(--border)';return;}let score=0;if(v.length>=8)score++;if(/[A-Z]/.test(v))score++;if(/[0-9]/.test(v))score++;if(/[^A-Za-z0-9]/.test(v))score++;const colors=['#ef4444','#f97316','#f59e0b','#10b981'];const widths=['25%','50%','75%','100%'];bar.style.background=colors[score-1]||'var(--border)';bar.style.width=widths[score-1]||'0';}
+
+// ── AUTH TABS ──
+function switchAuthTab(tab){['email','phone','google'].forEach(t=>{document.getElementById('auth-'+t).style.display=t===tab?'block':'none';document.getElementById('tab-'+t).classList.toggle('active',t===tab);});hideAlert('si-err');hideAlert('si-ok');}
+function switchSignupTab(tab){['email','phone','google'].forEach(t=>{document.getElementById('su-auth-'+t).style.display=t===tab?'block':'none';document.getElementById('su-tab-'+t).classList.toggle('active',t===tab);});hideAlert('su-err');hideAlert('su-ok');}
+
+// ── OTP BOXES ──
+function buildOTPBoxes(wrapperId){
+  const wrap=document.getElementById(wrapperId);wrap.innerHTML='';
+  for(let i=0;i<6;i++){const inp=document.createElement('input');inp.className='otp-box';inp.maxLength=1;inp.inputMode='numeric';inp.pattern='[0-9]';inp.autocomplete='one-time-code';inp.dataset.idx=i;inp.addEventListener('input',e=>{inp.classList.toggle('filled',!!inp.value);if(inp.value&&i<5)wrap.children[i+1].focus();});inp.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!inp.value&&i>0)wrap.children[i-1].focus();});inp.addEventListener('paste',e=>{e.preventDefault();const d=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);[...d].forEach((ch,j)=>{if(wrap.children[j]){wrap.children[j].value=ch;wrap.children[j].classList.add('filled');}});if(wrap.children[Math.min(d.length,5)])wrap.children[Math.min(d.length,5)].focus();});wrap.appendChild(inp);}
+  wrap.children[0].focus();
+}
+function getOTP(wrapperId){return Array.from(document.getElementById(wrapperId).children).map(b=>b.value).join('');}
+function startTimer(timerId,resendId,seconds=60){let s=seconds;const el=document.getElementById(timerId);const t=setInterval(()=>{s--;if(el)el.textContent=s;if(s<=0){clearInterval(t);const r=document.getElementById(resendId);if(r)r.style.display='inline';}},1000);}
+
+// ── SEND OTP ──
+async function sendOTP(mode){
+  const prefix=mode==='signin'?'si':'su';
+  const country=document.getElementById(prefix+'-country').value;
+  const num=document.getElementById(prefix+'-phone').value.replace(/\D/g,'');
+  if(!num||num.length<8){showErr(prefix==='si'?'si-err':'su-err','Please enter a valid phone number.');return;}
+  const phone=country+num;
+  const btn=document.getElementById(prefix+'-otp-btn');
+  btn.disabled=true;btn.textContent='Sending…';
+  try{
+    const{error}=await sb.auth.signInWithOtp({phone});
+    if(error)throw error;
+    document.getElementById(prefix+'-otp-section').style.display='block';
+    buildOTPBoxes(prefix+'-otp-boxes');
+    startTimer(prefix+'-timer',prefix+'-resend');
+    btn.textContent='OTP Sent ✓';
+    showInfo(prefix==='si'?'si-err':'su-err','OTP sent to '+phone+'. Check your SMS.');
+    document.getElementById(prefix==='si'?'si-err':'su-err').className='alert alert-info';
+    document.getElementById(prefix==='si'?'si-err':'su-err').style.display='block';
+  }catch(e){showErr(prefix==='si'?'si-err':'su-err',e.message);btn.disabled=false;btn.textContent='Send OTP';}
+}
+
+// ── VERIFY OTP ──
+async function verifyOTP(mode){
+  const prefix=mode==='signin'?'si':'su';
+  const country=document.getElementById(prefix+'-country').value;
+  const num=document.getElementById(prefix+'-phone').value.replace(/\D/g,'');
+  const phone=country+num;
+  const token=getOTP(prefix+'-otp-boxes');
+  if(token.length!==6){showErr(prefix==='si'?'si-err':'su-err','Please enter the 6-digit OTP.');return;}
+  try{
+    const{data,error}=await sb.auth.verifyOtp({phone,token,type:'sms'});
+    if(error)throw error;
+    handleAuthSuccess(data.user,mode==='signup');
+  }catch(e){showErr(prefix==='si'?'si-err':'su-err',e.message);}
+}
+
+// ── EMAIL SIGN IN ──
+async function signInEmail(){
+  hideAlert('si-err');hideAlert('si-ok');
+  const email=document.getElementById('si-email').value.trim();
+  const pass=document.getElementById('si-pass').value;
+  if(!email||!pass){showErr('si-err','Please enter your email and password.');return;}
+  const btn=document.getElementById('si-btn');btn.disabled=true;btn.textContent='Signing in…';
+  try{
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error)throw error;
+    handleAuthSuccess(data.user,false);
+  }catch(e){showErr('si-err',e.message);btn.disabled=false;btn.textContent='Sign in';}
+}
+
+// ── EMAIL SIGN UP ──
+async function signUpEmail(){
+  hideAlert('su-err');hideAlert('su-ok');
+  const name=document.getElementById('su-name').value.trim();
+  const email=document.getElementById('su-email').value.trim();
+  const pass=document.getElementById('su-pass').value;
+  const pass2=document.getElementById('su-pass2').value;
+  if(!name){showErr('su-err','Please enter your full name.');return;}
+  if(!email){showErr('su-err','Please enter your email.');return;}
+  if(pass.length<8){showErr('su-err','Password must be at least 8 characters.');return;}
+  if(pass!==pass2){showErr('su-err','Passwords do not match.');return;}
+  const btn=document.getElementById('su-btn');btn.disabled=true;btn.textContent='Creating account…';
+  try{
+    const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,name}}});
+    if(error)throw error;
+    if(data.user&&!data.user.email_confirmed_at){
+      showOk('su-ok','✅ Check your email to confirm your account, then sign in!');
+      btn.disabled=false;btn.textContent='Create account';
+    } else {
+      handleAuthSuccess(data.user,true);
+    }
+  }catch(e){showErr('su-err',e.message);btn.disabled=false;btn.textContent='Create account';}
+}
+
+// ── GOOGLE SIGN IN ── ✅ FIXED: hardcoded Vercel URL
+async function signInGoogle(){
+  document.getElementById('google-btn') && (document.getElementById('google-btn').disabled=true,document.getElementById('google-btn').textContent='Redirecting…');
+  const{error}=await sb.auth.signInWithOAuth({
+    provider:'google',
+    options:{
+      redirectTo:'https://dealboard-crm.vercel.app/auth',
+      queryParams:{access_type:'offline',prompt:'consent'}
+    }
+  });
+  if(error){
+    showErr('si-err',error.message);
+    const btn=document.getElementById('google-btn');
+    if(btn){btn.disabled=false;btn.innerHTML='<svg class="google-ico" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Continue with Google';}
+  }
+}
+
+// ── RESET PASSWORD ── ✅ FIXED: hardcoded Vercel URL
+async function sendReset(){
+  hideAlert('rs-err');hideAlert('rs-ok');
+  const email=document.getElementById('rs-email').value.trim();
+  if(!email){showErr('rs-err','Please enter your email.');return;}
+  const btn=document.getElementById('rs-btn');btn.disabled=true;btn.textContent='Sending…';
+  try{
+    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://dealboard-crm.vercel.app/auth?reset=true'});
+    if(error)throw error;
+    showOk('rs-ok','✅ Password reset link sent! Check your email.');
+    btn.disabled=false;btn.textContent='Send reset link';
+  }catch(e){showErr('rs-err',e.message);btn.disabled=false;btn.textContent='Send reset link';}
+}
+
+// ── ONBOARDING ──
+async function saveOnboarding(){
+  const name=document.getElementById('ob-name').value.trim();
+  const title=document.getElementById('ob-title').value.trim();
+  const company=document.getElementById('ob-company').value.trim();
+  const country=document.getElementById('ob-country').value;
+  const phone=document.getElementById('ob-phone').value.trim();
+  if(!name){showErr('ob-err','Please enter your full name.');return;}
+  const btn=document.getElementById('ob-btn');btn.disabled=true;btn.textContent='Saving…';
+  const{data:{user}}=await sb.auth.getUser();
+  try{
+    const{error}=await sb.from('profiles').upsert({
+      id:user.id,
+      name,designation:title||null,company:company||null,
+      phone:phone?(country+phone.replace(/\D/g,'')):null,
+      onboarded:true,updated_at:new Date().toISOString()
+    });
+    if(error)throw error;
+    redirectToCRM();
+  }catch(e){showErr('ob-err',e.message);btn.disabled=false;btn.textContent='Complete setup →';}
+}
+
+// ── AUTH SUCCESS ──
+async function handleAuthSuccess(user,isNew=false){
+  if(!user)return;
+  const{data:profile}=await sb.from('profiles').select('onboarded,role,name').eq('id',user.id).single();
+  if(isNew||!profile?.onboarded){
+    const name=user.user_metadata?.full_name||user.user_metadata?.name||'';
+    if(name)document.getElementById('ob-name').value=name;
+    showPanel('panel-onboard');
+  } else {
+    redirectToCRM();
+  }
+}
+
+// ── REDIRECT TO CRM ── ✅ FIXED: goes to /app instead of /
+function redirectToCRM(){
+  const params=new URLSearchParams(window.location.search);
+  const dest=params.get('redirect')||'/app';
+  window.location.href=dest;
+}
+
+// ── STARTUP ── ✅ FIXED: proper OAuth callback handling
+(async()=>{
+  applyTheme(localStorage.getItem('db-auth-theme')||'dark');
+
+  const hash=window.location.hash;
+
+  // Handle OAuth callback (Google redirects back here with #access_token)
+  if(hash.includes('access_token')){
+    document.getElementById('auth-loading').classList.add('show');
+    // Give supabase-js time to parse the hash and set the session
+    await new Promise(r=>setTimeout(r,300));
+    const{data:{session}}=await sb.auth.getSession();
+    if(session?.user){
+      // Clean up the URL
+      history.replaceState(null,'',window.location.pathname+window.location.search);
+      await handleAuthSuccess(session.user,false);
+      return;
+    }
+    document.getElementById('auth-loading').classList.remove('show');
+  }
+
+  // Handle error in hash (e.g. user denied Google access)
+  if(hash.includes('error=')){
+    const p=new URLSearchParams(hash.replace(/^#/,''));
+    const msg=decodeURIComponent(p.get('error_description')||'Authentication failed. Please try again.');
+    showErr('si-err',msg);
+    history.replaceState(null,'',window.location.pathname);
+  }
+
+  // Handle password reset callback
+  if(window.location.search.includes('reset=true')){
+    showPanel('panel-reset');
+    showInfo('rs-ok','Please set your new password.');
+  }
+
+  // Already logged in?
+  const{data:{session}}=await sb.auth.getSession();
+  if(session?.user){
+    const{data:profile}=await sb.from('profiles').select('onboarded').eq('id',session.user.id).single();
+    if(profile?.onboarded){redirectToCRM();}
+    else{document.getElementById('ob-name').value=session.user.user_metadata?.full_name||'';showPanel('panel-onboard');}
+  }
+})();
+
+// Enter key shortcuts
+document.getElementById('si-pass').addEventListener('keydown',e=>{if(e.key==='Enter')signInEmail();});
+document.getElementById('su-pass2').addEventListener('keydown',e=>{if(e.key==='Enter')signUpEmail();});
+document.getElementById('rs-email').addEventListener('keydown',e=>{if(e.key==='Enter')sendReset();});
+</script>
+</body>
+</html>
