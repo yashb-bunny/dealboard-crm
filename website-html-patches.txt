@@ -1,0 +1,36 @@
+# dealboard-website.html — 3 Exact Changes Needed
+
+## CHANGE 1 — Fix Google OAuth redirectTo
+### FIND:
+async function signInGoogle(){
+  const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/auth.html'}});
+  if(error)toast(error.message,'error');
+}
+
+### REPLACE WITH:
+async function signInGoogle(){
+  const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://dealboard-crm.vercel.app/auth'}});
+  if(error)toast(error.message,'error');
+}
+
+---
+
+## CHANGE 2 — Fix doLogin() redirect after successful email login
+### FIND (inside doLogin function):
+    toast('Welcome back! Redirecting…');
+    setTimeout(()=>{window.location.href='index.html';},1200);
+
+### REPLACE WITH:
+    toast('Welcome back! Redirecting…');
+    setTimeout(()=>{window.location.href='app.html';},1200);
+
+---
+
+## CHANGE 3 — Fix doSignup() redirect after successful signup
+### FIND (inside doSignup function):
+      toast('Account created! Redirecting…');
+      setTimeout(()=>{window.location.href='index.html';},1500);
+
+### REPLACE WITH:
+      toast('Account created! Redirecting…');
+      setTimeout(()=>{window.location.href='app.html';},1500);
