@@ -1,39 +1,5 @@
 {
-  "version": 2,
-  "name": "dealboard-crm",
-  "buildCommand": null,
-  "outputDirectory": ".",
-  "routes": [
-    {
-      "src": "^/$",
-      "dest": "/index.html"
-    },
-    {
-      "src": "^/admin$",
-      "dest": "/dealboard-admin.html"
-    },
-    {
-      "src": "^/auth$",
-      "dest": "/dealboard-auth.html"
-    },
-    {
-      "src": "^/import$",
-      "dest": "/dealboard-import.html"
-    },
-    {
-      "src": "^/(.*)$",
-      "dest": "/$1"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
-      ]
-    }
+  "rewrites": [
+    { "src": "^/landing$", "dest": "/dealboard-website.html" }
   ]
 }
