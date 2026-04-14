@@ -1,5 +1,5 @@
 {
   "routes": [
-    { "src": "^/landing$", "dest": "/dealboard-website.html" }
+    { "src": "/landing", "dest": "/dealboard-website.html" }
   ]
 }
