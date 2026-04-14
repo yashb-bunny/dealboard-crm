@@ -509,7 +509,7 @@ window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{
 
 // ── AUTH ──
 async function signInGoogle(){
-  const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/auth'}});
+  const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://dealboard-crm.vercel.app/auth'}});
   if(error)toast(error.message,'error');
 }
 async function doLogin(){
@@ -1006,7 +1006,17 @@ async function init(){
 
 // ── STARTUP ──
 (async()=>{
-  const saved=localStorage.getItem('db-theme')||'dark';applyTheme(saved);
+  // Handle OAuth callback if Google redirected here with #access_token
+  const _oauthHash=window.location.hash;
+  if(_oauthHash.includes('access_token')){
+    await new Promise(r=>setTimeout(r,300));
+    const{data:{session:oS2}}=await sb.auth.getSession();
+    if(oS2?.user){
+      history.replaceState(null,'',window.location.pathname);
+      showApp(oS2.user);
+      return;
+    }
+  }
   const{data:{session}}=await sb.auth.getSession();
   if(session?.user)showApp(session.user);
 })();
