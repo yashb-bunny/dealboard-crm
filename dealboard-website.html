@@ -732,7 +732,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementB
 
 // ── GOOGLE ───────────────────────────────────────────────────────────────────
 async function signInGoogle(){
-  const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+'/auth.html'}});
+  const{error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://dealboard-crm.vercel.app/auth'}});
   if(error)toast(error.message,'error');
 }
 
