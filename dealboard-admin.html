@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dealboard Admin Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[data-theme="dark"]{--bg:#05080f;--bg2:#0b1120;--bg3:#111c35;--bg4:#182440;--border:#1a2d4e;--border2:#243d66;--text:#edf2ff;--text2:#7a93c0;--text3:#3a567a;--card:#0b1120;--shadow:rgba(0,0,0,.7)}
+[data-theme="light"]{--bg:#eef2fb;--bg2:#fff;--bg3:#f4f7ff;--bg4:#e8eeff;--border:#cdd7f0;--border2:#b0bfe0;--text:#0a1020;--text2:#3a5080;--text3:#8090b0;--card:#fff;--shadow:rgba(0,0,0,.1)}
+:root{
+  --purple:#7c3aed;--blue:#2563eb;--grad:linear-gradient(135deg,#7c3aed,#2563eb);
+  --green:#10b981;--greenbg:rgba(16,185,129,.1);
+  --amber:#f59e0b;--amberbg:rgba(245,158,11,.1);
+  --red:#ef4444;--redbg:rgba(239,68,68,.1);
+  --orange:#f97316;--orangebg:rgba(249,115,22,.1);
+  --teal:#14b8a6;--tealbg:rgba(20,184,166,.1);
+  --r:10px;--r2:14px;--r3:18px;
+  font-family:'Inter',sans-serif;
+}
+body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+
+/* ── LOGIN ── */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+.login-bg-glow{position:absolute;inset:0;background:radial-gradient(ellipse at 25% 50%,rgba(239,68,68,.1) 0%,transparent 55%),radial-gradient(ellipse at 75% 50%,rgba(124,58,237,.08) 0%,transparent 55%);pointer-events:none}
+.login-card{position:relative;width:420px;max-width:95vw;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r3);padding:40px 36px;box-shadow:0 20px 60px var(--shadow)}
+.admin-badge{display:inline-flex;align-items:center;gap:6px;background:var(--redbg);border:1px solid rgba(239,68,68,.3);color:var(--red);font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;letter-spacing:.5px;margin-bottom:20px}
+.db-logo-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.lm{display:flex;flex-direction:column;gap:3px}
+.lb{height:4px;border-radius:2px;background:var(--grad)}
+.lb:nth-child(1){width:22px;margin-left:7px}
+.lb:nth-child(2){width:29px}
+.lb:nth-child(3){width:17px;margin-left:11px}
+.db-wm{font-size:20px;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.login-title{font-size:22px;font-weight:700;margin-bottom:5px;letter-spacing:-.4px}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:24px}
+.fl{display:block;font-size:11.5px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.fc{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 13px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:all .2s;margin-bottom:13px}
+.fc:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(239,68,68,.12)}
+.fc::placeholder{color:var(--text3)}
+.login-btn{width:100%;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none;border-radius:var(--r);padding:12px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.login-btn:hover{opacity:.88;transform:translateY(-1px)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.login-err{background:var(--redbg);border:1px solid rgba(239,68,68,.3);border-radius:var(--r);padding:9px 13px;font-size:13px;color:var(--red);margin-bottom:14px;display:none}
+
+/* ── LAYOUT ── */
+#sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh}
+.sb-top{padding:18px 16px 14px;border-bottom:1px solid var(--border)}
+.admin-pill{display:inline-flex;align-items:center;gap:5px;background:var(--redbg);border:1px solid rgba(239,68,68,.25);color:var(--red);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.5px;margin-top:6px}
+nav{flex:1;padding:10px 0;overflow-y:auto;min-height:0}
+.ns{padding:8px 18px 3px;font-size:9.5px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.ni{display:flex;align-items:center;gap:9px;padding:8.5px 14px;margin:1px 8px;border-radius:var(--r);cursor:pointer;font-size:13.5px;color:var(--text2);transition:all .15s}
+.ni:hover{background:var(--bg3);color:var(--text)}
+.ni.active{background:rgba(239,68,68,.1);color:var(--red)}
+.ni svg{width:15px;height:15px;flex-shrink:0;opacity:.65}
+.ni.active svg{opacity:1}
+.nb{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;font-family:'JetBrains Mono',monospace}
+.sb-foot{padding:12px 14px;border-top:1px solid var(--border);flex-shrink:0}
+.theme-row{display:flex;gap:3px;background:var(--bg3);border-radius:8px;padding:3px;border:1px solid var(--border);margin-bottom:10px}
+.tb{flex:1;padding:5px 2px;border:none;border-radius:6px;cursor:pointer;font-size:10px;font-weight:500;font-family:'Inter',sans-serif;color:var(--text3);background:transparent;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:2px}
+.tb.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 3px var(--shadow)}
+.user-row{display:flex;align-items:center;gap:8px}
+.uav{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#b91c1c);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.uname{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.lout{background:none;border:none;color:var(--text3);cursor:pointer;font-size:17px;transition:color .15s}
+.lout:hover{color:var(--red)}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;height:100vh}
+#topbar{height:54px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 22px;gap:14px;background:var(--bg2);flex-shrink:0}
+.tb-title{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.tb-sub{font-size:11.5px;color:var(--text3)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+#content{flex:1;overflow-y:auto;padding:22px}
+
+/* ── CARDS & UI ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:20px}
+.card-sm{padding:14px 16px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);border:none;cursor:pointer;font-size:12.5px;font-weight:500;font-family:'Inter',sans-serif;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--grad);color:#fff}.btn-primary:hover{opacity:.88}
+.btn-red{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff}.btn-red:hover{opacity:.88}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-danger{background:var(--redbg);color:var(--red);border:1px solid rgba(239,68,68,.2)}.btn-danger:hover{background:var(--red);color:#fff}
+.btn-success{background:var(--greenbg);color:var(--green);border:1px solid rgba(16,185,129,.2)}.btn-success:hover{background:var(--green);color:#fff}
+.btn-sm{padding:4px 10px;font-size:11.5px}
+.btn-xs{padding:2px 8px;font-size:11px}
+.btn-icon{width:30px;height:30px;padding:0;justify-content:center;border-radius:8px}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:99px;font-size:10.5px;font-weight:600;white-space:nowrap}
+.b-green{background:var(--greenbg);color:var(--green)}.b-red{background:var(--redbg);color:var(--red)}.b-amber{background:var(--amberbg);color:var(--amber)}.b-blue{background:rgba(37,99,235,.1);color:var(--blue)}.b-purple{background:rgba(124,58,237,.1);color:var(--purple)}.b-gray{background:var(--bg4);color:var(--text2)}.b-teal{background:var(--tealbg);color:var(--teal)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s}
+.stat-card:hover{border-color:var(--border2)}
+.sl{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.6px;text-transform:uppercase;margin-bottom:9px}
+.sv{font-size:26px;font-weight:700;letter-spacing:-1px;line-height:1}
+.ss{font-size:11.5px;color:var(--text3);margin-top:4px}
+.sico{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:26px;opacity:.2}
+.sbar{position:absolute;bottom:0;left:0;right:0;height:2px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{border-bottom:1px solid var(--border)}
+th{padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg3)}
+td{padding:11px 14px;vertical-align:middle}
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-weight:700;color:#fff}
+.av-sm{width:28px;height:28px;font-size:11px}
+.fg{margin-bottom:14px}
+.flab{display:block;font-size:11.5px;font-weight:500;color:var(--text2);margin-bottom:5px}
+.fcon{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-size:13.5px;font-family:'Inter',sans-serif;outline:none;transition:border-color .15s}
+.fcon:focus{border-color:var(--purple)}
+.fcon::placeholder{color:var(--text3)}
+select.fcon option{background:var(--bg3)}
+textarea.fcon{resize:vertical;min-height:100px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:60px 16px}
+.overlay.show{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:520px;max-width:100%;max-height:85vh;overflow-y:auto;animation:fadeDown .18s ease}
+@keyframes fadeDown{from{transform:translateY(-10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hd{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:14px;font-weight:700}
+.modal-body{padding:18px 22px}
+.modal-ft{padding:13px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+#conf-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:none;align-items:center;justify-content:center}
+#conf-overlay.show{display:flex}
+.conf-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:22px;width:340px;animation:fadeDown .18s ease}
+#toast{position:fixed;bottom:18px;right:18px;z-index:9997;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.toast-msg{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 15px;font-size:12.5px;color:var(--text);display:flex;align-items:center;gap:8px;min-width:200px;box-shadow:0 8px 28px var(--shadow);animation:slideR .2s ease}
+@keyframes slideR{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+.empty{text-align:center;padding:44px 20px;color:var(--text3)}
+.empty-ico{font-size:32px;margin-bottom:10px}
+.empty-ttl{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:4px}
+.act-item{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--border)}
+.act-item:last-child{border-bottom:none}
+.act-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.tabs{display:flex;gap:3px;background:var(--bg3);border-radius:var(--r);padding:3px;width:fit-content;margin-bottom:16px}
+.tab{padding:5px 13px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);border:none;background:transparent;font-family:'Inter',sans-serif;transition:all .15s;white-space:nowrap}
+.tab.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 3px var(--shadow)}
+.tgl{position:relative;display:inline-block;width:36px;height:20px}
+.tgl input{opacity:0;width:0;height:0}
+.tgl-sl{position:absolute;cursor:pointer;inset:0;background:var(--bg4);border-radius:99px;transition:.2s}
+.tgl-sl:before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.tgl input:checked+.tgl-sl{background:var(--green)}
+.tgl input:checked+.tgl-sl:before{transform:translateX(16px)}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--border)}
+.set-row:last-child{border-bottom:none}
+.set-label{font-size:13.5px;font-weight:500}
+.set-sub{font-size:11.5px;color:var(--text3);margin-top:2px}
+.legal-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:all .15s}
+.legal-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+@media(max-width:900px){#sidebar{width:52px;min-width:52px}.sb-top>div:not(.db-logo-row),.ns,.ni span,.uname,.lout,.theme-row span{display:none}.ni{justify-content:center;padding:9px}.sb-top{padding:12px 0;justify-content:center;display:flex}.sb-foot{padding:6px}.user-row{justify-content:center}.stats-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-bg-glow"></div>
+  <div class="login-card">
+    <div class="admin-badge">🔐 ADMIN PORTAL</div>
+    <div class="db-logo-row">
+      <div class="lm"><div class="lb"></div><div class="lb"></div><div class="lb"></div></div>
+      <div class="db-wm">Dealboard</div>
+    </div>
+    <div class="login-title">Admin Access Only</div>
+    <div class="login-sub">This portal is restricted to administrators. All access is logged.</div>
+    <div class="login-err" id="login-err"></div>
+    <label class="fl">Email address</label>
+    <input class="fc" id="l-email" type="email" placeholder="admin@dealboard.in" value="admin@customecrm.com"/>
+    <label class="fl">Password</label>
+    <input class="fc" id="l-pass" type="password" placeholder="••••••••" value="Admin@1234"/>
+    <button class="login-btn" id="login-btn" onclick="doLogin()"><span id="l-btn-txt">Sign in as Admin</span></button>
+    <div style="margin-top:16px;font-size:11.5px;color:var(--text3);text-align:center">🔒 Admin access only — unauthorised attempts are logged<br>© 2026 Yash Bhavsar — Dealboard</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar" style="display:none">
+  <div class="sb-top">
+    <div class="db-logo-row"><div class="lm"><div class="lb"></div><div class="lb"></div><div class="lb"></div></div><div class="db-wm">Dealboard</div></div>
+    <div class="admin-pill">⚡ ADMIN PORTAL</div>
+  </div>
+  <nav>
+    <div class="ns">Overview</div>
+    <div class="ni active" data-view="overview"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v5H2V2zm7 0h5v5H9V2zM2 9h5v5H2V9zm7 0h5v5H9V9z"/></svg><span>Dashboard</span></div>
+    <div class="ns">Management</div>
+    <div class="ni" data-view="users"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3z"/></svg><span>Users</span><span class="nb" id="users-badge">0</span></div>
+    <div class="ni" data-view="invites"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 4h12v8H2V4zm6 4l5-3H3l5 3z"/></svg><span>Invites</span></div>
+    <div class="ns">Data</div>
+    <div class="ni" data-view="crm-data"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2C4.7 2 2 3.1 2 4.5v7C2 12.9 4.7 14 8 14s6-1.1 6-2.5v-7C14 3.1 11.3 2 8 2zm0 2c2.8 0 4 .9 4 .5S10.8 6 8 6 4 5.1 4 4.5 5.2 4 8 4z"/></svg><span>CRM Data</span></div>
+    <div class="ni" data-view="activity-log"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.5 7.7l-3 1.5-.5-.9 2.5-1.3V4h1v4.7z"/></svg><span>Activity Log</span></div>
+    <div class="ns">System</div>
+    <div class="ni" data-view="legal"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h10v12H3V2zm2 2v1h6V4H5zm0 3v1h6V7H5zm0 3v1h4v-1H5z"/></svg><span>Legal Pages</span></div>
+    <div class="ni" data-view="settings"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M6.5 1h3l.5 1.5a5 5 0 011.2.7L13 2.8l1.5 2.6-1.2 1.1a5 5 0 010 1.4l1.2 1.1-1.5 2.6-1.8-.7a5 5 0 01-1.2.7L9.5 13h-3l-.5-1.5a5 5 0 01-1.2-.7L3 11.6 1.5 9l1.2-1.1a5 5 0 010-1.4L1.5 5.4 3 2.8l1.8.7a5 5 0 011.2-.7L6.5 1zM8 5.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/></svg><span>Settings</span></div>
+    <div class="ni" data-view="crm-app"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12v9H2V2zm5 10h2l1 2H6l1-2z"/></svg><span>Open CRM</span></div>
+  </nav>
+  <div class="sb-foot">
+    <div class="theme-row">
+      <button class="tb" data-t="light" onclick="setTheme('light')">☀️<span>Light</span></button>
+      <button class="tb" data-t="system" onclick="setTheme('system')">💻<span>Auto</span></button>
+      <button class="tb" data-t="dark" onclick="setTheme('dark')">🌙<span>Dark</span></button>
+    </div>
+    <div class="user-row">
+      <div class="uav" id="uav">A</div>
+      <div class="uname" id="uname">Admin</div>
+      <button class="lout" onclick="doLogout()" title="Sign out">⏻</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main" style="display:none">
+  <div id="topbar">
+    <div><div class="tb-title" id="tb-title">Dashboard</div><div class="tb-sub" id="tb-sub"></div></div>
+    <div class="tb-right" id="tb-actions"></div>
+  </div>
+  <div id="content">
+    <div id="view-overview"></div>
+    <div id="view-users" style="display:none"></div>
+    <div id="view-invites" style="display:none"></div>
+    <div id="view-crm-data" style="display:none"></div>
+    <div id="view-activity-log" style="display:none"></div>
+    <div id="view-legal" style="display:none"></div>
+    <div id="view-settings" style="display:none"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="conf-overlay">
+  <div class="conf-box">
+    <div style="font-size:15px;font-weight:700;margin-bottom:8px">Confirm Action</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.6" id="conf-msg"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="closeConf()">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="conf-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title" id="modal-title"></div><button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-ft"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" id="modal-save">Save</button></div>
+  </div>
+</div>
+
+<script>
+const SB_URL='https://dijaqnbfqsajbfniozwd.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpamFxbmJmcXNhamJmbmlvendkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMDM0NzgsImV4cCI6MjA5MDg3OTQ3OH0.YzzoJrFFi_SiCbklIhB-nZPLRDG4sPAqxzGC_ntJD-I';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+let currentUser=null;
+let DATA={users:[],invites:[],contacts:[],orgs:[],deals:[],tasks:[],activities:[],legal:[],settings:{}};
+let currentView='overview',actTab='All',legalTab='all';
+
+// helpers
+function ini(n){return(n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+const AVC=['#7c3aed','#2563eb','#10b981','#f59e0b','#ef4444','#14b8a6','#f97316'];
+function avc(n){let h=0;for(const c of(n||''))h=(h*31+c.charCodeAt(0))%AVC.length;return AVC[h];}
+function fd(d){if(!d)return'—';return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
+function fdt(d){if(!d)return'—';return new Date(d).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function timeAgo(d){if(!d)return'';const s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return fd(d);}
+function fm(v){if(!v&&v!==0)return'—';const n=parseFloat(v);if(n>=10000000)return'₹'+(n/10000000).toFixed(1)+'Cr';if(n>=100000)return'₹'+(n/100000).toFixed(1)+'L';return'₹'+n.toLocaleString('en-IN');}
+function bdg(l,c){return`<span class="badge ${c||'b-gray'}">${l}</span>`;}
+
+// toast
+function toast(msg,type='success'){const i={success:'✅',error:'❌',info:'ℹ️',warn:'⚠️'};const el=document.createElement('div');el.className='toast-msg';el.innerHTML=`<span>${i[type]}</span><span>${msg}</span>`;document.getElementById('toast').appendChild(el);setTimeout(()=>el.remove(),3800);}
+
+// confirm
+let confRes;
+function confirm2(msg,label='Confirm'){document.getElementById('conf-msg').textContent=msg;document.getElementById('conf-ok').textContent=label;document.getElementById('conf-overlay').classList.add('show');return new Promise(r=>confRes=r);}
+function closeConf(v=false){document.getElementById('conf-overlay').classList.remove('show');if(confRes)confRes(v);}
+document.getElementById('conf-ok').onclick=()=>closeConf(true);
+
+// modal
+function openModal(title,body,saveFn,saveLabel='Save'){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').innerHTML=body;
+  document.getElementById('modal-overlay').classList.add('show');
+  const saveBtn=document.getElementById('modal-save');
+  saveBtn.textContent=saveLabel;
+  if(saveFn===null){saveBtn.style.display='none';}
+  else{saveBtn.style.display='flex';saveBtn.onclick=async()=>{saveBtn.textContent='Saving…';try{await saveFn();closeModal();}catch(e){toast(e.message,'error');}finally{saveBtn.textContent=saveLabel;}};}
+  setTimeout(()=>{const f=document.querySelector('#modal-body input,#modal-body textarea');if(f)f.focus();},100);
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('show');}
+
+// theme
+function applyTheme(t){const root=document.documentElement;const dark=t==='system'?window.matchMedia('(prefers-color-scheme:dark)').matches:t==='dark';root.setAttribute('data-theme',dark?'dark':'light');document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('active',b.dataset.t===t));localStorage.setItem('db-admin-theme',t);}
+function setTheme(t){applyTheme(t);}
+
+// auth
+async function doLogin(){
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-err');
+  err.style.display='none';
+  btn.disabled=true;
+  document.getElementById('l-btn-txt').textContent='Signing in…';
+  try{
+    // Clear stale tokens before fresh login
+    Object.keys(localStorage).forEach(k=>{if(k.startsWith('sb-')||k.includes('supabase'))localStorage.removeItem(k);});
+    sessionStorage.clear();
+
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){err.textContent=error.message;err.style.display='block';btn.disabled=false;document.getElementById('l-btn-txt').textContent='Sign in as Admin';return;}
+
+    // Wait for session to propagate
+    await new Promise(r=>setTimeout(r,400));
+
+    // Verify admin role — retry up to 3 times with delay
+    let profile=null;
+    for(let i=0;i<3;i++){
+      const{data:p}=await sb.from('profiles').select('role,name,email').eq('id',data.user.id).maybeSingle();
+      if(p){profile=p;break;}
+      await new Promise(r=>setTimeout(r,500));
+    }
+
+    const isAdmin=(profile&&profile.role==='admin')||(email==='admin@customecrm.com');
+    if(!isAdmin){
+      await sb.auth.signOut();
+      err.textContent='Access denied. Admin accounts only.';
+      err.style.display='block';
+      btn.disabled=false;
+      document.getElementById('l-btn-txt').textContent='Sign in as Admin';
+      return;
+    }
+    currentUser=data.user;
+    showApp(data.user,profile||{name:email.split('@')[0],role:'admin'});
+  }catch(e){
+    err.textContent=e.message||'Login failed. Please try again.';
+    err.style.display='block';
+    btn.disabled=false;
+    document.getElementById('l-btn-txt').textContent='Sign in as Admin';
+  }
+}
+document.getElementById('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+function showApp(user,profile){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('sidebar').style.display='flex';
+  document.getElementById('main').style.display='flex';
+  document.getElementById('uav').textContent=(user?.email||'A')[0].toUpperCase();
+  document.getElementById('uname').textContent=profile?.name||user?.email?.split('@')[0]||'Admin';
+  init();
+}
+async function doLogout(){await sb.auth.signOut();location.reload();}
+
+// load all data
+async function loadAll(){
+  const[u,i,c,o,d,t,a,l,s]=await Promise.all([
+    sb.from('profiles').select('*').order('created_at',{ascending:false}),
+    sb.from('invites').select('*').order('created_at',{ascending:false}),
+    sb.from('contacts').select('id,full_name,email,status,created_at').order('created_at',{ascending:false}),
+    sb.from('organisations').select('id,name,industry,created_at').order('name'),
+    sb.from('deals').select('id,title,stage,value,created_at').order('created_at',{ascending:false}),
+    sb.from('tasks').select('id,title,status,priority,due_date').order('created_at',{ascending:false}),
+    sb.from('activities').select('*').order('created_at',{ascending:false}).limit(100),
+    sb.from('legal_pages').select('*').order('updated_at',{ascending:false}),
+    sb.from('system_settings').select('*'),
+  ]);
+  DATA.users=u.data||[];DATA.invites=i.data||[];DATA.contacts=c.data||[];DATA.orgs=o.data||[];
+  DATA.deals=d.data||[];DATA.tasks=t.data||[];DATA.activities=a.data||[];DATA.legal=l.data||[];
+  DATA.settings={};(s.data||[]).forEach(r=>{try{DATA.settings[r.key]=typeof r.value==='object'?r.value:JSON.parse(r.value);}catch{DATA.settings[r.key]=r.value;}});
+  document.getElementById('users-badge').textContent=DATA.users.length;
+}
+
+// navigation
+const PAGE={
+  overview:{t:'Admin Dashboard',s:'System overview & health',a:null},
+  users:{t:'User Management',s:'Manage team members & roles',a:'<button class="btn btn-red btn-sm" onclick="openInviteModal()">+ Invite User</button>'},
+  invites:{t:'Invites',s:'Pending & accepted invitations',a:'<button class="btn btn-red btn-sm" onclick="openInviteModal()">+ New Invite</button>'},
+  'crm-data':{t:'CRM Data Overview',s:'All records across the platform',a:'<button class="btn btn-success btn-sm" onclick="exportAll()">📊 Export All</button>'},
+  'activity-log':{t:'Activity Log',s:'Everything that happened across all users',a:null},
+  legal:{t:'Legal Pages',s:'Terms, Privacy Policy & more',a:null},
+  settings:{t:'System Settings',s:'Branding, features & limits',a:null},
+};
+document.querySelectorAll('.ni[data-view]').forEach(el=>el.addEventListener('click',()=>{
+  if(el.dataset.view==='crm-app'){window.open('https://dealboard-crm.vercel.app/app','_blank');return;}
+  switchView(el.dataset.view);
+}));
+
+function switchView(view){
+  currentView=view;
+  document.querySelectorAll('.ni[data-view]').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
+  document.querySelectorAll('[id^="view-"]').forEach(el=>el.style.display='none');
+  document.getElementById('view-'+view).style.display='block';
+  const m=PAGE[view]||{t:view,s:'',a:null};
+  document.getElementById('tb-title').textContent=m.t;
+  document.getElementById('tb-sub').textContent=m.s;
+  document.getElementById('tb-actions').innerHTML=m.a||'';
+  renders[view]();
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────────────────
+function renderOverview(){
+  const wonVal=DATA.deals.filter(d=>d.stage==='deal_closed').reduce((s,d)=>s+(parseFloat(d.value)||0),0);
+  const activeDeals=DATA.deals.filter(d=>!['deal_closed','deal_lost','deal_on_hold'].includes(d.stage));
+  const overdueTasks=DATA.tasks.filter(t=>t.status!=='Done'&&t.due_date&&new Date(t.due_date)<new Date());
+  const recentActs=DATA.activities.slice(0,6);
+  const actTypeIco={deal_stage_changed:'🔄',contact_created:'👤',deal_created:'💼',task_done:'✅',note_added:'📝'};
+  const actTypeBg={deal_stage_changed:'rgba(124,58,237,.1)',contact_created:'rgba(37,99,235,.1)',deal_created:'rgba(124,58,237,.1)',task_done:'var(--greenbg)',note_added:'var(--tealbg)'};
+
+  // Last 7 days activity count
+  const now=Date.now();
+  const last7=DATA.activities.filter(a=>now-new Date(a.created_at)<7*86400000).length;
+
+  document.getElementById('view-overview').innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="sl">Total Users</div><div class="sv" style="color:var(--red)">${DATA.users.length}</div><div class="ss">${DATA.users.filter(u=>u.role==='admin').length} admin, ${DATA.users.filter(u=>u.role!=='admin').length} members</div><div class="sico">👥</div><div class="sbar" style="background:var(--red)"></div></div>
+      <div class="stat-card"><div class="sl">CRM Records</div><div class="sv" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${DATA.contacts.length+DATA.orgs.length+DATA.deals.length}</div><div class="ss">${DATA.contacts.length} contacts · ${DATA.orgs.length} orgs · ${DATA.deals.length} deals</div><div class="sico">🗄️</div><div class="sbar" style="background:var(--grad)"></div></div>
+      <div class="stat-card"><div class="sl">Won Revenue</div><div class="sv" style="color:var(--green)">${fm(wonVal)}</div><div class="ss">${DATA.deals.filter(d=>d.stage==='deal_closed').length} deals closed</div><div class="sico">💰</div><div class="sbar" style="background:var(--green)"></div></div>
+      <div class="stat-card"><div class="sl">Activity (7d)</div><div class="sv" style="color:var(--amber)">${last7}</div><div class="ss">${DATA.activities.length} total logged</div><div class="sico">🔔</div><div class="sbar" style="background:var(--amber)"></div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="card">
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px">👥 Team Members</div>
+        ${DATA.users.slice(0,5).map(u=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div class="av av-sm" style="background:${u.role==='admin'?'linear-gradient(135deg,#dc2626,#b91c1c)':avc(u.name||u.email)}">${ini(u.name||u.email)}</div>
+          <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name||u.email?.split('@')[0]||'Unknown'}</div><div style="font-size:11px;color:var(--text3)">${u.email||'—'}</div></div>
+          ${bdg(u.role==='admin'?'Admin':'Member',u.role==='admin'?'b-red':'b-blue')}
+        </div>`).join('')}
+        ${DATA.users.length>5?`<div style="text-align:center;padding-top:10px"><button class="btn btn-ghost btn-sm" onclick="switchView('users')">View all ${DATA.users.length} users →</button></div>`:''}
+      </div>
+
+      <div class="card">
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:14px">🔔 Recent Activity</div>
+        ${recentActs.length===0?`<div class="empty"><div class="empty-ico">🔔</div><div class="empty-ttl">No activity yet</div></div>`:
+        recentActs.map(a=>`<div class="act-item">
+          <div class="act-ico" style="background:${actTypeBg[a.type]||'var(--bg4)'}">${actTypeIco[a.type]||'🔔'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.description||a.entity_name||'Activity'}</div>
+            <div style="font-size:10.5px;color:var(--text3);margin-top:2px">${a.user_name||'System'} · ${timeAgo(a.created_at)}</div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      <div class="card card-sm" style="cursor:pointer" onclick="switchView('users')">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Pending Invites</div>
+        <div style="font-size:24px;font-weight:700;color:var(--amber)">${DATA.invites.filter(i=>!i.accepted_at).length}</div>
+        <div style="font-size:11.5px;color:var(--text3);margin-top:3px">awaiting acceptance</div>
+      </div>
+      <div class="card card-sm" style="cursor:pointer" onclick="switchView('crm-data')">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Active Pipeline</div>
+        <div style="font-size:24px;font-weight:700;color:var(--purple)">${activeDeals.length}</div>
+        <div style="font-size:11.5px;color:var(--text3);margin-top:3px">deals in progress</div>
+      </div>
+      <div class="card card-sm" style="cursor:pointer;border-color:${overdueTasks.length>0?'rgba(239,68,68,.4)':'var(--border)'}">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Overdue Tasks</div>
+        <div style="font-size:24px;font-weight:700;color:${overdueTasks.length>0?'var(--red)':'var(--green)'}">${overdueTasks.length}</div>
+        <div style="font-size:11.5px;color:var(--text3);margin-top:3px">${overdueTasks.length>0?'need attention':'all on track'}</div>
+      </div>
+    </div>`;
+}
+
+// ── USERS ────────────────────────────────────────────────────────────────────
+function renderUsers(){
+  document.getElementById('view-users').innerHTML=`
+    <div class="card" style="padding:0;overflow:hidden">
+      <table>
+        <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Auth</th><th>Joined</th><th>Last Seen</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+        ${DATA.users.length===0?`<tr><td colspan="8"><div class="empty"><div class="empty-ico">👥</div><div class="empty-ttl">No users yet</div></div></td></tr>`:
+        DATA.users.map(u=>`<tr>
+          <td><div style="display:flex;align-items:center;gap:9px">
+            <div class="av av-sm" style="background:${u.role==='admin'?'linear-gradient(135deg,#dc2626,#b91c1c)':avc(u.name||u.email)}">${ini(u.name||u.email)}</div>
+            <div><div style="font-weight:600;font-size:13px">${u.name||'—'}</div>${u.designation?`<div style="font-size:11px;color:var(--text3)">${u.designation}</div>`:''}</div>
+          </div></td>
+          <td style="color:var(--text2);font-size:12.5px">${u.email||'—'}</td>
+          <td>${bdg(u.role==='admin'?'Admin':'Member',u.role==='admin'?'b-red':'b-blue')}</td>
+          <td style="font-size:12px;color:var(--text3)">${u.auth_provider||'email'}</td>
+          <td style="font-size:12px;color:var(--text3)">${fd(u.created_at)}</td>
+          <td style="font-size:12px;color:var(--text3)">${u.last_seen_at?timeAgo(u.last_seen_at):'Never'}</td>
+          <td>${bdg(u.is_active!==false?'Active':'Suspended',u.is_active!==false?'b-green':'b-red')}</td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-ghost btn-xs" onclick="openEditUser('${u.id}')">✏️</button>
+              <button class="btn btn-ghost btn-xs" onclick="toggleUserStatus('${u.id}',${u.is_active!==false})" title="${u.is_active!==false?'Suspend':'Activate'}">${u.is_active!==false?'🚫':'✅'}</button>
+              <button class="btn btn-ghost btn-xs" onclick="changeUserRole('${u.id}','${u.role}')" title="Change role">👑</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function openEditUser(userId){
+  const u=DATA.users.find(x=>x.id===userId);if(!u)return;
+  openModal('Edit User',`
+    <div class="fg"><label class="flab">Full Name</label><input class="fcon" id="u-name" value="${u.name||''}" placeholder="Full name"/></div>
+    <div class="fg"><label class="flab">Designation / Role Title</label><input class="fcon" id="u-desig" value="${u.designation||''}" placeholder="Sales Manager"/></div>
+    <div class="fg"><label class="flab">Company</label><input class="fcon" id="u-company" value="${u.company||''}" placeholder="Dealboard"/></div>
+    <div class="fg"><label class="flab">Phone</label><input class="fcon" id="u-phone" value="${u.phone||''}" placeholder="+91 98200 00000"/></div>
+    <div class="fg"><label class="flab">Role</label><select class="fcon" id="u-role"><option ${u.role==='admin'?'selected':''} value="admin">Admin</option><option ${u.role!=='admin'?'selected':''} value="user">Member</option></select></div>
+  `,async()=>{
+    const{error}=await sb.from('profiles').update({name:document.getElementById('u-name').value.trim()||null,designation:document.getElementById('u-desig').value.trim()||null,company:document.getElementById('u-company').value.trim()||null,phone:document.getElementById('u-phone').value.trim()||null,role:document.getElementById('u-role').value}).eq('id',userId);
+    if(error)throw error;await loadAll();renderUsers();toast('User updated!');
+  });
+}
+
+async function toggleUserStatus(userId,isActive){
+  const action=isActive?'suspend':'activate';
+  const ok=await confirm2(`Are you sure you want to ${action} this user? They will ${isActive?'lose':'regain'} access immediately.`,isActive?'Suspend':'Activate');
+  if(!ok)return;
+  const{error}=await sb.from('profiles').update({is_active:!isActive}).eq('id',userId);
+  if(error){toast(error.message,'error');return;}
+  await loadAll();renderUsers();toast(`User ${action}d successfully`);
+}
+
+async function changeUserRole(userId,currentRole){
+  const newRole=currentRole==='admin'?'user':'admin';
+  const ok=await confirm2(`Change this user's role to ${newRole==='admin'?'Admin':'Member'}?`,`Make ${newRole==='admin'?'Admin':'Member'}`);
+  if(!ok)return;
+  const{error}=await sb.from('profiles').update({role:newRole}).eq('id',userId);
+  if(error){toast(error.message,'error');return;}
+  await loadAll();renderUsers();toast(`Role changed to ${newRole}`);
+}
+
+// ── INVITES ──────────────────────────────────────────────────────────────────
+function renderInvites(){
+  document.getElementById('view-invites').innerHTML=`
+    <div class="card" style="padding:0;overflow:hidden">
+      <table>
+        <thead><tr><th>Email</th><th>Role</th><th>Invited By</th><th>Expires</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+        ${DATA.invites.length===0?`<tr><td colspan="6"><div class="empty"><div class="empty-ico">📧</div><div class="empty-ttl">No invites yet</div><div style="font-size:13px;color:var(--text3);margin-top:4px">Invite your team members to Dealboard</div></div></td></tr>`:
+        DATA.invites.map(inv=>{
+          const expired=new Date(inv.expires_at)<new Date()&&!inv.accepted_at;
+          const accepted=!!inv.accepted_at;
+          return`<tr>
+            <td style="font-weight:500">${inv.email}</td>
+            <td>${bdg(inv.role==='admin'?'Admin':'Member',inv.role==='admin'?'b-red':'b-blue')}</td>
+            <td style="color:var(--text3);font-size:12px">${DATA.users.find(u=>u.id===inv.invited_by)?.name||'Admin'}</td>
+            <td style="font-size:12px;color:${expired?'var(--red)':'var(--text3)'}">${fd(inv.expires_at)}</td>
+            <td>${accepted?bdg('Accepted','b-green'):expired?bdg('Expired','b-red'):bdg('Pending','b-amber')}</td>
+            <td>
+              ${!accepted&&!expired?`<button class="btn btn-ghost btn-xs" onclick="copyInviteLink('${inv.token}')">📋 Copy Link</button>`:''}
+              <button class="btn btn-ghost btn-xs" style="color:var(--red)" onclick="revokeInvite('${inv.id}')">🗑️</button>
+            </td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function openInviteModal(){
+  openModal('Invite Team Member',`
+    <div class="fg"><label class="flab">Email Address *</label><input class="fcon" id="inv-email" type="email" placeholder="colleague@company.com"/></div>
+    <div class="fg"><label class="flab">Role</label><select class="fcon" id="inv-role"><option value="user">Member</option><option value="admin">Admin</option></select></div>
+    <div style="background:var(--bg3);border-radius:var(--r);padding:12px;font-size:12.5px;color:var(--text2);line-height:1.6">
+      ✉️ A real invite email will be sent to the recipient with a secure sign-in link. They click the link to set their password and join your workspace.
+    </div>
+  `,async()=>{
+    const email=document.getElementById('inv-email').value.trim();
+    const role=document.getElementById('inv-role').value;
+    if(!email){toast('Email is required','error');throw new Error('Email required');}
+
+    // Call Edge Function to send real email invite
+    const resp=await fetch('https://dijaqnbfqsajbfniozwd.supabase.co/functions/v1/send-invite',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,role,invited_by_name:currentUser?.email||'Admin'})
+    });
+    const result=await resp.json();
+    if(!resp.ok||result.error)throw new Error(result.error||'Failed to send invite');
+
+    // Also save to invites table for tracking
+    await sb.from('invites').insert({email,role,invited_by:currentUser.id}).catch(()=>{});
+
+    await loadAll();renderInvites();
+    toast(result.existing_user?`${email} already has an account — sent sign-in link!`:`✅ Invite email sent to ${email}!`);
+  });
+}
+
+function copyInviteLink(token){
+  const link=`${location.origin}/register?token=${token}`;
+  navigator.clipboard.writeText(link).then(()=>toast('Invite link copied!')).catch(()=>toast('Copy: '+link,'info'));
+}
+
+async function revokeInvite(id){
+  const ok=await confirm2('Revoke this invite? The link will no longer work.','Revoke');
+  if(!ok)return;
+  const{error}=await sb.from('invites').delete().eq('id',id);
+  if(error){toast(error.message,'error');return;}
+  await loadAll();renderInvites();toast('Invite revoked');
+}
+
+// ── CRM DATA ─────────────────────────────────────────────────────────────────
+function renderCrmData(){
+  const wonVal=DATA.deals.filter(d=>d.stage==='deal_closed').reduce((s,d)=>s+(parseFloat(d.value)||0),0);
+  const stageMap={cold_call:'Cold Call',first_meeting:'First Meeting',demo:'Demo',sent_quote:'Sent Quote',negotiation:'Negotiation',deal_closed:'Deal Closed',deal_lost:'Deal Lost',deal_on_hold:'On Hold'};
+  const stageDot={cold_call:'#64748b',first_meeting:'#2563eb',demo:'#7c3aed',sent_quote:'#f59e0b',negotiation:'#f97316',deal_closed:'#10b981',deal_lost:'#ef4444',deal_on_hold:'#14b8a6'};
+
+  document.getElementById('view-crm-data').innerHTML=`
+    <div class="stats-grid" style="grid-template-columns:repeat(5,1fr)">
+      <div class="stat-card"><div class="sl">Contacts</div><div class="sv" style="color:var(--blue)">${DATA.contacts.length}</div><div class="ss">${DATA.contacts.filter(c=>c.status==='Active').length} active</div><div class="sico">👤</div></div>
+      <div class="stat-card"><div class="sl">Organisations</div><div class="sv" style="color:var(--purple)">${DATA.orgs.length}</div><div class="sico">🏢</div></div>
+      <div class="stat-card"><div class="sl">Total Deals</div><div class="sv" style="background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${DATA.deals.length}</div><div class="ss">Win rate: ${DATA.deals.length?Math.round(DATA.deals.filter(d=>d.stage==='deal_closed').length/DATA.deals.length*100):0}%</div><div class="sico">💼</div></div>
+      <div class="stat-card"><div class="sl">Won Revenue</div><div class="sv" style="color:var(--green)">${fm(wonVal)}</div><div class="sico">💰</div></div>
+      <div class="stat-card"><div class="sl">Tasks</div><div class="sv" style="color:var(--amber)">${DATA.tasks.length}</div><div class="ss">${DATA.tasks.filter(t=>t.status==='Done').length} completed</div><div class="sico">📋</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:14px">Pipeline Stage Breakdown</div>
+        ${Object.entries(stageMap).map(([key,label])=>{const cnt=DATA.deals.filter(d=>d.stage===key).length;const pct=DATA.deals.length?Math.round(cnt/DATA.deals.length*100):0;return`<div style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px"><div style="display:flex;align-items:center;gap:6px"><div style="width:7px;height:7px;border-radius:50%;background:${stageDot[key]}"></div><span style="font-size:12.5px">${label}</span></div><span style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace">${cnt}</span></div><div style="height:3px;background:var(--bg4);border-radius:99px"><div style="height:100%;width:${pct}%;background:${stageDot[key]};border-radius:99px;transition:width .6s"></div></div></div>`;}).join('')}
+      </div>
+      <div class="card">
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:14px">Recent Contacts</div>
+        ${DATA.contacts.slice(0,8).map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+          <div class="av av-sm" style="background:${avc(c.full_name)}">${ini(c.full_name)}</div>
+          <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.full_name}</div><div style="font-size:11px;color:var(--text3)">${c.email||'—'}</div></div>
+          ${bdg(c.status||'Active',c.status==='Active'?'b-green':c.status==='Lead'?'b-amber':'b-gray')}
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── ACTIVITY LOG ─────────────────────────────────────────────────────────────
+function renderActivityLog(){
+  const tabs=['All','Deals','Contacts','Tasks','System'];
+  const typeMap={deal_stage_changed:'Deals',contact_created:'Contacts',deal_created:'Deals',task_done:'Tasks',note_added:'System'};
+  const actIco={deal_stage_changed:{ico:'🔄',bg:'rgba(124,58,237,.12)'},contact_created:{ico:'👤',bg:'rgba(37,99,235,.12)'},deal_created:{ico:'💼',bg:'rgba(124,58,237,.12)'},task_done:{ico:'✅',bg:'var(--greenbg)'},note_added:{ico:'📝',bg:'var(--tealbg)'}};
+  const filtered=actTab==='All'?DATA.activities:DATA.activities.filter(a=>(typeMap[a.type]||'System')===actTab);
+
+  document.getElementById('view-activity-log').innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div class="tabs">${tabs.map(t=>`<button class="tab ${actTab===t?'active':''}" onclick="actTab='${t}';renderActivityLog()">${t}</button>`).join('')}</div>
+      <span style="font-size:12px;color:var(--text3)">${filtered.length} events</span>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      ${filtered.length===0?`<div class="empty"><div class="empty-ico">🔔</div><div class="empty-ttl">No activity</div></div>`:
+      filtered.map(a=>{const s=actIco[a.type]||{ico:'🔔',bg:'var(--bg4)'};return`<div class="act-item" style="padding:13px 18px">
+        <div class="act-ico" style="background:${s.bg}">${s.ico}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500">${a.description||a.entity_name||'Activity'}</div>
+          <div style="display:flex;gap:12px;margin-top:3px">
+            ${a.entity_type?`<span style="font-size:11px;color:var(--text3)">📁 ${a.entity_type.replace('_',' ')}</span>`:''}
+            ${a.user_name?`<span style="font-size:11px;color:var(--text3)">👤 ${a.user_name}</span>`:''}
+            ${a.channel?`<span style="font-size:11px;color:var(--text3)">via ${a.channel}</span>`:''}
+            <span style="font-size:11px;color:var(--text3)">${fdt(a.created_at)}</span>
+          </div>
+        </div>
+      </div>`}).join('')}
+    </div>`;
+}
+
+// ── LEGAL PAGES ──────────────────────────────────────────────────────────────
+function renderLegal(){
+  const slugLabel={
+    'terms-and-conditions':'Terms & Conditions',
+    'privacy-policy':'Privacy Policy',
+    'refund-policy':'Refund Policy',
+    'cookie-policy':'Cookie Policy',
+  };
+  document.getElementById('view-legal').innerHTML=`
+    <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:13px;color:var(--text2)">All legal pages are © Yash Bhavsar — Dealboard. Click any page to edit.</div>
+      <button class="btn btn-ghost btn-sm" onclick="openNewLegalModal()">+ New Page</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+      ${DATA.legal.map(p=>`<div class="legal-card" onclick="openEditLegal('${p.id}')">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+          <div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:3px">${p.title}</div>
+            <div style="font-size:11.5px;color:var(--text3)">/${p.slug} · v${p.version||'1.0'}</div>
+            <div style="font-size:11.5px;color:var(--text3);margin-top:3px">Updated: ${fd(p.updated_at)}</div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openEditLegal('${p.id}')">✏️ Edit</button>
+            <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewLegal('${p.id}')">👁️</button>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.content.slice(0,100)}…</div>
+      </div>`).join('')}
+    </div>
+    <div style="margin-top:14px;padding:12px 16px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border);font-size:12px;color:var(--text3)">
+      🔒 All pages carry: <strong>Copyright © Yash Bhavsar — Dealboard. All Rights Reserved.</strong>
+    </div>`;
+}
+
+function openEditLegal(id){
+  const p=DATA.legal.find(x=>x.id===id);if(!p)return;
+  openModal('Edit: '+p.title,`
+    <div class="fg"><label class="flab">Page Title</label><input class="fcon" id="leg-title" value="${p.title}"/></div>
+    <div class="fg"><label class="flab">Version</label><input class="fcon" id="leg-ver" value="${p.version||'1.0'}" style="max-width:100px"/></div>
+    <div class="fg"><label class="flab">Content (Markdown supported)</label><textarea class="fcon" id="leg-content" style="min-height:300px;font-family:'JetBrains Mono',monospace;font-size:12px">${p.content}</textarea></div>
+    <div style="font-size:11.5px;color:var(--text3);margin-top:-8px">© Yash Bhavsar — Dealboard is automatically included in all pages.</div>
+  `,async()=>{
+    const{error}=await sb.from('legal_pages').update({title:document.getElementById('leg-title').value.trim(),content:document.getElementById('leg-content').value,version:document.getElementById('leg-ver').value.trim(),updated_at:new Date().toISOString()}).eq('id',id);
+    if(error)throw error;await loadAll();renderLegal();toast('Legal page updated!');
+  });
+}
+
+function previewLegal(id){
+  const p=DATA.legal.find(x=>x.id===id);if(!p)return;
+  openModal(p.title,`<div style="max-height:65vh;overflow-y:auto;font-size:13px;line-height:1.7;color:var(--text2);white-space:pre-wrap;font-family:'JetBrains Mono',monospace">${p.content}</div>`,null);
+}
+
+function openNewLegalModal(){
+  openModal('New Legal Page',`
+    <div class="fg"><label class="flab">Title *</label><input class="fcon" id="leg-title" placeholder="Data Processing Agreement"/></div>
+    <div class="fg"><label class="flab">URL Slug *</label><input class="fcon" id="leg-slug" placeholder="data-processing-agreement"/></div>
+    <div class="fg"><label class="flab">Version</label><input class="fcon" id="leg-ver" value="1.0" style="max-width:100px"/></div>
+    <div class="fg"><label class="flab">Content</label><textarea class="fcon" id="leg-content" style="min-height:200px" placeholder="# Title&#10;&#10;Content here…&#10;&#10;© Yash Bhavsar — Dealboard. All Rights Reserved."></textarea></div>
+  `,async()=>{
+    const title=document.getElementById('leg-title').value.trim();
+    const slug=document.getElementById('leg-slug').value.trim();
+    if(!title||!slug){toast('Title and slug required','error');throw new Error('Required');}
+    const{error}=await sb.from('legal_pages').insert({title,slug,content:document.getElementById('leg-content').value,version:document.getElementById('leg-ver').value});
+    if(error)throw error;await loadAll();renderLegal();toast('Legal page created!');
+  });
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+function renderSettings(){
+  const br=DATA.settings['branding']||{};
+  const ft=DATA.settings['features']||{};
+  const lm=DATA.settings['limits']||{};
+
+  document.getElementById('view-settings').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">🎨 Branding</div>
+          <div class="fg"><label class="flab">CRM Name</label><input class="fcon" id="s-name" value="${br.name||'Dealboard'}"/></div>
+          <div class="fg"><label class="flab">Tagline</label><input class="fcon" id="s-tagline" value="${br.tagline||'Close deals faster'}"/></div>
+          <div class="fg"><label class="flab">Owner / Founder</label><input class="fcon" id="s-owner" value="${br.owner||'Yash Bhavsar'}"/></div>
+          <div class="fg" style="margin-bottom:0"><label class="flab">Support Email</label><input class="fcon" id="s-email" value="${br.support_email||'support@dealboard.in'}"/></div>
+          <button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="saveBranding()">Save Branding</button>
+        </div>
+
+        <div class="card">
+          <div style="font-size:14px;font-weight:700;margin-bottom:14px">📊 System Limits</div>
+          <div class="set-row"><div><div class="set-label">Max Contacts</div><div class="set-sub">Current: ${lm.max_contacts||10000}</div></div><input class="fcon" id="lm-contacts" value="${lm.max_contacts||10000}" type="number" style="width:100px;text-align:center"/></div>
+          <div class="set-row"><div><div class="set-label">Max Deals</div><div class="set-sub">Current: ${lm.max_deals||5000}</div></div><input class="fcon" id="lm-deals" value="${lm.max_deals||5000}" type="number" style="width:100px;text-align:center"/></div>
+          <div class="set-row"><div><div class="set-label">Max Team Members</div><div class="set-sub">Current: ${lm.max_users||50}</div></div><input class="fcon" id="lm-users" value="${lm.max_users||50}" type="number" style="width:100px;text-align:center"/></div>
+          <button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="saveLimits()">Save Limits</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:14px">⚙️ Features</div>
+          ${[
+            ['telegram_bot','Telegram Bot Integration','Allow users to access CRM via Telegram','ft-tg'],
+            ['bulk_import','CSV / Excel Bulk Import','Allow importing contacts & deals from files','ft-imp'],
+            ['daily_summary','Daily Summary Reports','Send end-of-day CRM summary to Telegram','ft-sum'],
+            ['google_auth','Google OAuth Login','Allow sign in with Google account','ft-ggl'],
+          ].map(([key,label,sub,id])=>`
+          <div class="set-row">
+            <div><div class="set-label">${label}</div><div class="set-sub">${sub}</div></div>
+            <label class="tgl"><input type="checkbox" id="${id}" ${ft[key]?'checked':''}><span class="tgl-sl"></span></label>
+          </div>`).join('')}
+          <button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="saveFeatures()">Save Features</button>
+        </div>
+
+        <div class="card">
+          <div style="font-size:14px;font-weight:700;margin-bottom:14px">⚠️ Danger Zone</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">These actions are irreversible. Proceed with extreme caution.</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-danger" onclick="clearAllActivities()">🗑️ Clear all activity logs</button>
+            <button class="btn btn-danger" onclick="exportSystemBackup()">📦 Export full system backup</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:10px">ℹ️ System Info</div>
+          <div style="font-size:12.5px;color:var(--text2);line-height:1.8">
+            <div>CRM: <strong>${br.name||'Dealboard'}</strong></div>
+            <div>Owner: <strong>${br.owner||'Yash Bhavsar'}</strong></div>
+            <div>Database: <strong>Supabase (ap-south-1)</strong></div>
+            <div>Users: <strong>${DATA.users.length}</strong></div>
+            <div>Records: <strong>${DATA.contacts.length+DATA.orgs.length+DATA.deals.length}</strong></div>
+            <div style="margin-top:8px;font-size:11px;color:var(--text3)">© 2026 Yash Bhavsar — Dealboard. All Rights Reserved.</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function saveBranding(){
+  const val={name:document.getElementById('s-name').value.trim(),tagline:document.getElementById('s-tagline').value.trim(),owner:document.getElementById('s-owner').value.trim(),support_email:document.getElementById('s-email').value.trim()};
+  const{error}=await sb.from('system_settings').upsert({key:'branding',value:val,updated_at:new Date().toISOString()});
+  if(error){toast(error.message,'error');return;}toast('Branding saved!');
+}
+async function saveLimits(){
+  const val={max_contacts:parseInt(document.getElementById('lm-contacts').value)||10000,max_deals:parseInt(document.getElementById('lm-deals').value)||5000,max_users:parseInt(document.getElementById('lm-users').value)||50};
+  const{error}=await sb.from('system_settings').upsert({key:'limits',value:val,updated_at:new Date().toISOString()});
+  if(error){toast(error.message,'error');return;}toast('Limits saved!');
+}
+async function saveFeatures(){
+  const val={telegram_bot:document.getElementById('ft-tg').checked,bulk_import:document.getElementById('ft-imp').checked,daily_summary:document.getElementById('ft-sum').checked,google_auth:document.getElementById('ft-ggl').checked};
+  const{error}=await sb.from('system_settings').upsert({key:'features',value:val,updated_at:new Date().toISOString()});
+  if(error){toast(error.message,'error');return;}toast('Feature flags saved!');
+}
+async function clearAllActivities(){
+  const ok=await confirm2('Delete ALL activity logs? This cannot be undone.','Delete All Logs');
+  if(!ok)return;
+  const{error}=await sb.from('activities').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  if(error){toast(error.message,'error');return;}await loadAll();renderActivityLog();toast('Activity logs cleared');
+}
+
+// ── EXPORT ───────────────────────────────────────────────────────────────────
+function makeSheet(headers,rows){const ws=XLSX.utils.aoa_to_sheet([headers,...rows]);ws['!cols']=headers.map((h,i)=>({wch:Math.min(Math.max(h.length,rows.reduce((m,r)=>Math.max(m,String(r[i]||'').length),0))+2,50)}));return ws;}
+
+function exportSystemBackup(){
+  const wb=XLSX.utils.book_new();const date=new Date().toLocaleString('en-IN');
+  XLSX.utils.book_append_sheet(wb,makeSheet(['Full Name','Email','Phone','Job Title','Status','Created'],DATA.contacts.map(c=>[c.full_name,c.email||'',c.phone||'',c.job_title||'',c.status||'Active',fd(c.created_at)])),'Contacts');
+  XLSX.utils.book_append_sheet(wb,makeSheet(['Name','Industry','Email','Phone','City','Country'],DATA.orgs.map(o=>[o.name,o.industry||'',o.email||'',o.phone||'',o.city||'',o.country||'India'])),'Organisations');
+  XLSX.utils.book_append_sheet(wb,makeSheet(['Title','Stage','Value','Created'],DATA.deals.map(d=>[d.title,d.stage,parseFloat(d.value)||0,fd(d.created_at)])),'Deals');
+  XLSX.utils.book_append_sheet(wb,makeSheet(['Name','Email','Role','Joined','Status'],DATA.users.map(u=>[u.name||'',u.email||'',u.role||'user',fd(u.created_at),u.is_active!==false?'Active':'Suspended'])),'Users');
+  XLSX.utils.book_append_sheet(wb,makeSheet(['Type','Description','User','Channel','Date'],DATA.activities.map(a=>[a.type||'',a.description||'',a.user_name||'system',a.channel||'web',fdt(a.created_at)])),'Activities');
+  const sumRows=[['Dealboard Admin — System Backup'],['Generated',date],[''],['Metric','Value'],['Total Users',DATA.users.length],['Contacts',DATA.contacts.length],['Organisations',DATA.orgs.length],['Deals',DATA.deals.length],['Tasks',DATA.tasks.length],['Activities',DATA.activities.length],[''],['© Yash Bhavsar — Dealboard','All Rights Reserved']];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sumRows),'Summary');
+  XLSX.writeFile(wb,`dealboard-admin-backup-${new Date().toISOString().split('T')[0]}.xlsx`);
+  toast('System backup exported! 📦');
+}
+function exportAll(){exportSystemBackup();}
+
+// ── RENDERS MAP ──────────────────────────────────────────────────────────────
+const renders={overview:renderOverview,users:renderUsers,invites:renderInvites,'crm-data':renderCrmData,'activity-log':renderActivityLog,legal:renderLegal,settings:renderSettings};
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+async function init(){
+  await loadAll();renderOverview();
+  document.getElementById('tb-sub').textContent='Welcome back, Admin · '+new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+(async()=>{
+  function clearStale(){Object.keys(localStorage).forEach(k=>{if(k.startsWith('sb-')||k.includes('supabase'))localStorage.removeItem(k);});sessionStorage.clear();}
+
+  const saved=localStorage.getItem('db-admin-theme')||'dark';applyTheme(saved);
+  const{data:{session}}=await sb.auth.getSession();
+  if(session?.user){
+    const{data:profile}=await sb.from('profiles').select('role,name').eq('id',session.user.id).single();
+    if(profile?.role==='admin'||session.user.email==='admin@customecrm.com'){currentUser=session.user;showApp(session.user,profile||{name:'Admin',role:'admin'});}
+    else{await sb.auth.signOut();}
+  }
+})();
+</script>
+</body>
+</html>

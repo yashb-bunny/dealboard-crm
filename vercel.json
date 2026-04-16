@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "name": "dealboard-crm",
+  "routes": [
+    { "src": "^/$",       "dest": "/index.html"             },
+    { "src": "^/app$",    "dest": "/dealboard-app.html"     },
+    { "src": "^/auth$",   "dest": "/dealboard-auth.html"    },
+    { "src": "^/admin$",  "dest": "/dealboard-admin.html"   },
+    { "src": "^/import$", "dest": "/dealboard-import.html"  },
+    { "src": "^/(.*)$",   "dest": "/$1"                     }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff"                     },
+        { "key": "X-Frame-Options",         "value": "SAMEORIGIN"                  },
+        { "key": "Referrer-Policy",         "value": "strict-origin-when-cross-origin" },
+        { "key": "Cache-Control",           "value": "no-store, no-cache, must-revalidate" }
+      ]
+    }
+  ]
+}
